@@ -1,0 +1,839 @@
+<title>Эпизод «Туман»</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: field-instrument screen. Map of the fogged planet on the left, the tilt device (readout, compass, step) and the radio log on the right; stacks on phones. Deliberately single dark theme. */
+:root {
+  color-scheme: dark;
+  --bg: #0a0e17;
+  --panel: #111925;
+  --panel-2: #0d141e;
+  --line: #22304a;
+  --fg: #dde4ec;
+  --muted: #8392a6;
+  --amber: #e8a24a;
+  --teal: #6ecdd7;
+  --sulfur: #c9ba62;
+  --violet: #ab9ee8;
+  --danger: #e2685b;
+  --f-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Consolas", monospace;
+}
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--fg); }
+body {
+  font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 28px;
+}
+.top { max-width: 1120px; margin: 0 auto 14px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; }
+.top h1 { font-family: var(--f-display); font-weight: 700; font-size: 22px; letter-spacing: 0.08em; margin: 0; text-transform: uppercase; }
+.top h1 span { color: var(--amber); }
+.top .sub { font-family: var(--f-mono); font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+.app { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+@media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
+.map { position: relative; width: 100%; max-width: 100%; aspect-ratio: 1; background: #05070c; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.map canvas { display: block; width: 100%; height: 100%; }
+.map::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 3px); }
+.legend { position: absolute; left: 10px; bottom: 8px; font-family: var(--f-mono); font-size: 11px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; z-index: 1; pointer-events: none; }
+.legend i { display: inline-block; width: 14px; height: 2px; vertical-align: middle; margin-right: 5px; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.dev { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.dev h2 { margin: 0; font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: var(--muted); text-transform: uppercase; display: flex; justify-content: space-between; }
+.read { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-family: var(--f-mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.read dt { color: var(--muted); }
+.read dd { margin: 0; text-align: right; }
+.read .locked { color: #3b4a62; }
+.warn { color: var(--danger); }
+.ddir { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.ddir b { color: var(--fg); font-weight: 600; }
+.bar { height: 6px; background: var(--panel-2); border-radius: 3px; position: relative; overflow: hidden; }
+.bar span { position: absolute; top: 0; bottom: 0; left: 50%; background: var(--teal); }
+.nav { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 14px; align-items: center; }
+#compass { width: 150px; height: 150px; touch-action: none; cursor: grab; border-radius: 50%; }
+#compass:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.ctrl { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ctrl label { font-family: var(--f-mono); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.ctrl input[type=number] { width: 70px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 3px; padding: 3px 6px; font-family: var(--f-mono); font-size: 13px; }
+.ctrl input[type=range] { width: 100%; accent-color: var(--amber); }
+button { font-family: var(--f-body); font-weight: 600; font-size: 14px; border-radius: 3px; padding: 9px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--panel-2); color: var(--fg); }
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+button:disabled { opacity: 0.4; cursor: default; }
+button.go { background: var(--amber); color: #1b1206; border-color: var(--amber); }
+.feed { position: absolute; left: 10px; top: 8px; z-index: 1; pointer-events: none; font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.live { color: #8fd6a8; }
+.live::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #8fd6a8; margin-right: 6px; vertical-align: 1px; animation: blink 1.6s infinite; }
+@keyframes blink { 50% { opacity: 0.25; } }
+.log { height: 270px; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; font-size: 14px; }
+.log p { margin: 0; animation: in 0.35s ease-out; }
+.log .who { font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; margin-right: 6px; }
+.w-hero { color: #f0dfc4; } .log p.n { color: var(--muted); font-style: italic; } .w-dev { color: var(--teal); } .w-int { color: var(--violet); }
+.w-grad { color: var(--teal); } .w-lev { color: #8fd6a8; } .w-bar { color: var(--amber); } .w-sys { color: var(--muted); }
+@keyframes in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .log p { animation: none; } }
+.overlay { position: fixed; inset: 0; z-index: 20; background: rgba(4, 6, 10, 0.78); display: grid; place-items: center; padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.overlay.tour { background: transparent; pointer-events: none; place-items: end center; }
+.overlay.tour.at-top { place-items: start center; }
+.overlay.tour .card { pointer-events: auto; max-width: 480px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border-color: var(--amber); }
+.spot { position: relative; z-index: 19; box-shadow: 0 0 0 3px var(--amber), 0 0 0 100vmax rgba(4, 6, 10, 0.7); transition: box-shadow 0.25s; }
+.card { width: 100%; max-width: 540px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.card .eyebrow { font-family: var(--f-mono); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.card h3 { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 28px; letter-spacing: 0.06em; text-transform: uppercase; text-wrap: balance; }
+.card h4 { margin: 0; font-family: var(--f-display); font-weight: 500; font-size: 17px; letter-spacing: 0.04em; text-wrap: balance; }
+.card p { margin: 0; max-width: 62ch; }
+.card .topics { font-family: var(--f-mono); font-size: 12px; color: var(--teal); }
+.formula { font-family: var(--f-body); font-style: italic; font-size: 20px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 3px; padding: 12px 14px; overflow-x: auto; }
+.formula .pt { font-style: normal; font-family: var(--f-mono); font-size: 13px; color: var(--muted); display: block; margin-top: 4px; }
+.fields { display: flex; gap: 14px; flex-wrap: wrap; }
+.fields label { display: flex; flex-direction: column; gap: 4px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.fields input { width: 120px; background: var(--panel-2); color: var(--fg); border: 1px solid var(--line); border-radius: 3px; padding: 8px 10px; font-family: var(--f-mono); font-size: 16px; }
+.fields input:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+.fb { font-size: 14px; min-height: 1.5em; }
+.fb.bad { color: var(--danger); } .fb.ok { color: #8fd6a8; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.sum { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.sum b { color: var(--teal); font-weight: 600; }
+</style>
+
+<header class="top">
+  <h1>Эпизод 1 · <span>Туман</span></h1>
+  <div class="sub">Пульт кафе на краю зоны · канал связи открыт</div>
+</header>
+
+<main class="app">
+  <div class="map" id="mapWrap">
+    <div class="feed">Датчики путника · планета-свалка</div>
+    <canvas id="cv" width="640" height="640" aria-label="Карта местности в тумане"></canvas>
+    <div class="legend"><span><i style="background:var(--teal)"></i>линии уровня</span><span><i style="background:var(--sulfur)"></i>граница тумана</span><span><i style="background:var(--amber)"></i>путь путника</span></div>
+  </div>
+
+  <aside class="side">
+    <section class="dev" id="pDev" aria-label="Прибор наклона">
+      <h2><span>Модуль наклона</span><span id="stepCount">шаг 0</span></h2>
+      <dl class="read">
+        <dt>путник (x, y)</dt><dd id="rPos">—</dd>
+        <dt>высота h</dt><dd id="rH">—</dd>
+        <dt>уровень тумана</dt><dd id="rL">—</dd>
+        <dt>запас над туманом</dt><dd id="rM">—</dd>
+        <dt>∂h/∂x (восток)</dt><dd id="rHx" class="locked">заблокировано</dd>
+        <dt>∂h/∂y (север)</dt><dd id="rHy" class="locked">заблокировано</dd>
+        <dt>|∇h|</dt><dd id="rG" class="locked">неизвестно</dd>
+      </dl>
+      <div class="ddir" id="rD">Наклон по курсу появится после калибровки.</div>
+      <div class="bar" aria-hidden="true"><span id="dBar"></span></div>
+    </section>
+
+    <section class="dev" id="pNav" aria-label="Курс и шаг">
+      <h2><span>Команды путнику</span><span>θ от востока</span></h2>
+      <div class="nav">
+        <svg id="compass" viewBox="-100 -100 200 200" tabindex="0" role="slider" aria-label="Направление курса" aria-valuemin="0" aria-valuemax="359" aria-valuenow="160">
+          <circle r="92" fill="#0d141e" stroke="#22304a" stroke-width="2"></circle>
+          <g id="ticks"></g>
+          <text x="0" y="-70" fill="#8392a6" font-size="13" text-anchor="middle" dominant-baseline="middle" font-family="JetBrains Mono, monospace">С</text>
+          <text x="70" y="0" fill="#8392a6" font-size="13" text-anchor="middle" dominant-baseline="middle" font-family="JetBrains Mono, monospace">В</text>
+          <text x="0" y="70" fill="#8392a6" font-size="13" text-anchor="middle" dominant-baseline="middle" font-family="JetBrains Mono, monospace">Ю</text>
+          <text x="-70" y="0" fill="#8392a6" font-size="13" text-anchor="middle" dominant-baseline="middle" font-family="JetBrains Mono, monospace">З</text>
+          <line id="lvl" x1="-80" y1="0" x2="80" y2="0" stroke="#8fd6a8" stroke-width="2" stroke-dasharray="5 5" visibility="hidden"></line>
+          <g id="gArrow" visibility="hidden"><line x1="0" y1="0" x2="62" y2="0" stroke="#6ecdd7" stroke-width="3"></line><path d="M62,-7 L78,0 L62,7 Z" fill="#6ecdd7"></path></g>
+          <g id="needle"><line x1="0" y1="0" x2="74" y2="0" stroke="#e8a24a" stroke-width="4" stroke-linecap="round"></line><circle cx="74" cy="0" r="6" fill="#e8a24a"></circle></g>
+          <circle r="7" fill="#dde4ec"></circle>
+        </svg>
+        <div class="ctrl">
+          <label for="thetaIn">курс θ, °<input type="number" id="thetaIn" min="0" max="359" step="1" value="160"></label>
+          <label for="stepIn">длина шага <span id="stepVal">0.50</span></label>
+          <input type="range" id="stepIn" min="0.1" max="1.5" step="0.05" value="0.5">
+          <button class="go" id="btnStep" disabled>Передать: шаг</button>
+          <button id="btnGrad" hidden>Курс по градиенту</button>
+          <button id="btnRestart" hidden>Пройти заново</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="dev comm" id="comm" aria-label="Канал связи"><h2><span>Канал связи</span><span class="live">приём</span></h2><div class="log" id="log" aria-live="polite"></div></section>
+  </aside>
+</main>
+
+<div class="overlay" id="modal" hidden><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
+
+<script>
+(() => {
+"use strict";
+// ---------- world ----------
+const N = 640, WR = 6, SC = N / (2 * WR);
+const START = { x: -4.5, y: -4.5 }, FP = { x: -1.55, y: -1.1 }, TW = { x: 3.25, y: 3.05 }, SD = { x: 0.03, y: 0.22 };
+const L0 = -1.35, RATE = 0.08, VIS = 2.0;
+const g = (x, y, a, cx, cy, s) => { const dx = x - cx, dy = y - cy; return a * Math.exp(-(dx * dx + dy * dy) / (2 * s * s)); };
+function h(x, y) {
+  return 0.15 * (x + y) + 0.5 + g(x, y, 3.0, -1.6, -1.2, 1.3) + g(x, y, 5.2, 3.2, 3.0, 1.5) + g(x, y, 1.0, 0.9, 0.9, 1.1)
+    - g(x, y, 1.8, -3.8, 1.2, 1.0) - g(x, y, 1.4, 1.2, -3.2, 1.1) + g(x, y, 0.7, -4.2, -1.0, 0.9);
+}
+function grad(x, y) { const e = 1e-4; return [(h(x + e, y) - h(x - e, y)) / (2 * e), (h(x, y + e) - h(x, y - e)) / (2 * e)]; }
+const w2p = (x, y) => [(x + WR) * SC, (WR - y) * SC];
+const fmt = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace("-", "−");
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const norm360 = a => ((a % 360) + 360) % 360;
+const angDiff = (a, b) => { const d = Math.abs(norm360(a) - norm360(b)); return Math.min(d, 360 - d); };
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const sleep = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 250) : ms));
+
+// ---------- precompute height field & terrain ----------
+const H = new Float32Array(N * N), G = new Float32Array(N * N);
+let hmin = 1e9, hmax = -1e9;
+for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+  const v = h(-WR + (i + 0.5) / SC, WR - (j + 0.5) / SC); H[j * N + i] = v;
+  if (v < hmin) hmin = v; if (v > hmax) hmax = v;
+}
+const mk = () => { const c = document.createElement("canvas"); c.width = c.height = N; return c; };
+const terrainC = mk(), fogC = mk(), seenC = mk(), tmpC = mk();
+(function buildTerrain() {
+  const ctx = terrainC.getContext("2d"), img = ctx.createImageData(N, N), d = img.data, pix = 1 / SC;
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const k = j * N + i, i0 = Math.max(0, i - 1), i1 = Math.min(N - 1, i + 1), j0 = Math.max(0, j - 1), j1 = Math.min(N - 1, j + 1);
+    const gx = (H[j * N + i1] - H[j * N + i0]) / ((i1 - i0) * pix), gy = (H[j0 * N + i] - H[j1 * N + i]) / ((j1 - j0) * pix);
+    const gm = Math.hypot(gx, gy) + 1e-6; G[k] = gm;
+    const t = (H[k] - hmin) / (hmax - hmin);
+    const lam = (0.6 * gx - 0.6 * gy + 1) / (Math.sqrt(gx * gx + gy * gy + 1) * 1.31);
+    const shade = 0.6 + 0.65 * Math.max(0, lam);
+    let r = (20 + 42 * t) * shade, gg = (28 + 52 * t) * shade, b = (42 + 66 * t) * shade;
+    const v = H[k] / 0.5, f = Math.abs(v - Math.round(v)), dpx = f * 0.5 / (gm * pix);
+    if (dpx < 0.9) {
+      const major = Math.round(v) % 4 === 0, a = (1 - dpx / 0.9) * (major ? 0.95 : 0.55);
+      r += (110 - r) * a; gg += (205 - gg) * a; b += (215 - b) * a;
+    }
+    d[4 * k] = r; d[4 * k + 1] = gg; d[4 * k + 2] = b; d[4 * k + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+})();
+function buildFog(L) {
+  const ctx = fogC.getContext("2d"), img = ctx.createImageData(N, N), d = img.data, pix = 1 / SC;
+  for (let k = 0; k < N * N; k++) {
+    const dd = L - H[k], edge = Math.abs(dd) / (G[k] * pix);
+    if (edge < 1.3) { d[4 * k] = 232; d[4 * k + 1] = 214; d[4 * k + 2] = 120; d[4 * k + 3] = 230 * (1 - edge / 1.3) + 25; }
+    else if (dd > 0) { d[4 * k] = 160; d[4 * k + 1] = 150; d[4 * k + 2] = 78; d[4 * k + 3] = 255 * Math.min(0.8, 0.32 + dd * 0.45); }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+function resetSeen() { const c = seenC.getContext("2d"); c.globalCompositeOperation = "source-over"; c.fillStyle = "#04060a"; c.fillRect(0, 0, N, N); }
+function stamp(x, y) {
+  const c = seenC.getContext("2d"), [px, py] = w2p(x, y), r = VIS * SC * 0.9;
+  const gr = c.createRadialGradient(px, py, 0, px, py, r);
+  gr.addColorStop(0, "rgba(0,0,0,0.55)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+  c.globalCompositeOperation = "destination-out"; c.fillStyle = gr; c.fillRect(px - r, py - r, 2 * r, 2 * r);
+  c.globalCompositeOperation = "source-over";
+}
+
+// ---------- state ----------
+const S = {};
+function freshState(calibrated) {
+  Object.assign(S, {
+    phase: "title", x: START.x, y: START.y, t: 0, theta: 160, step: 0.5, path: [[START.x, START.y]],
+    calibrated: !!calibrated, gradFound: false, steepKnown: false, levelFound: false, falsePeak: false, won: false,
+    busy: false, stepsNoGrad: 0, overshoots: 0, warned: false, descHint: false, backHint: false, checkpoint: null, reveal: 0,
+    linDone: false, linEst: null, linT: 0, fdDone: false, fdFail: false, saddleDone: false, solved: 0
+  });
+}
+const fogL = () => L0 + RATE * S.t;
+
+// ---------- DOM ----------
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d"), tctx = tmpC.getContext("2d");
+const logEl = $("log"), modal = $("modal"), card = $("card");
+const WHO = { hero: ["ПУТНИК · рация", "w-hero"], dev: ["ПУЛЬТ", "w-dev"], bar: ["БАРИСТА", "w-bar"], sys: ["", "w-sys"] };
+function say(who, text) {
+  const p = document.createElement("p"), [name, cls] = WHO[who];
+  if (who === "sys") { p.className = "n"; p.textContent = text; } else p.innerHTML = `<span class="who ${cls}">${name}</span>${text}`;
+  logEl.appendChild(p); logEl.scrollTop = logEl.scrollHeight;
+}
+async function seq(lines) {
+  S.busy = true; update();
+  for (const [who, text, wait] of lines) { say(who, text); await sleep(wait ?? 700 + text.length * 22); }
+  S.busy = false; update();
+}
+function openModal(html) { modal.classList.remove("tour", "at-top"); card.innerHTML = html; modal.hidden = false; const f = card.querySelector("input, button"); if (f) f.focus(); }
+function closeModal() { modal.hidden = true; }
+
+// compass ticks
+(function () {
+  let s = "";
+  for (let a = 0; a < 360; a += 15) {
+    const r1 = a % 90 === 0 ? 80 : 85, c = Math.cos(rad(a)), sn = -Math.sin(rad(a));
+    s += `<line x1="${r1 * c}" y1="${r1 * sn}" x2="${90 * c}" y2="${90 * sn}" stroke="#3a4a64" stroke-width="${a % 90 === 0 ? 2 : 1}"></line>`;
+  }
+  $("ticks").innerHTML = s;
+})();
+
+function update() {
+  const hv = h(S.x, S.y), L = fogL(), m = hv - L, [hx, hy] = grad(S.x, S.y), gm = Math.hypot(hx, hy);
+  $("stepCount").textContent = "шаг " + S.t;
+  $("rPos").textContent = `(${fmt(S.x)}, ${fmt(S.y)})`;
+  $("rH").textContent = fmt(hv);
+  $("rL").textContent = fmt(L);
+  $("rM").textContent = fmt(m); $("rM").className = m < 0.5 ? "warn" : "";
+  const cal = S.calibrated;
+  $("rHx").textContent = !cal ? "заблокировано" : S.fdFail ? "сбой" : fmt(hx); $("rHx").className = !cal ? "locked" : S.fdFail ? "warn" : "";
+  $("rHy").textContent = cal ? fmt(hy) : "заблокировано"; $("rHy").className = cal ? "" : "locked";
+  $("rG").textContent = S.steepKnown ? fmt(gm) : "неизвестно"; $("rG").className = S.steepKnown ? "" : "locked";
+  const th = rad(S.theta), D = hx * Math.cos(th) + hy * Math.sin(th);
+  if (cal) {
+    $("rD").innerHTML = `Наклон по курсу:<br>D = ∂h/∂x·cos θ + ∂h/∂y·sin θ = <b>${fmt(D)}</b>`;
+    const w = Math.min(50, Math.abs(D) / 2.5 * 50), bar = $("dBar");
+    bar.style.width = w + "%"; bar.style.left = D >= 0 ? "50%" : (50 - w) + "%";
+    bar.style.background = D >= 0 ? "var(--teal)" : "var(--sulfur)";
+  }
+  $("needle").setAttribute("transform", `rotate(${-S.theta})`);
+  $("compass").setAttribute("aria-valuenow", Math.round(S.theta));
+  const ga = deg(Math.atan2(hy, hx));
+  const showG = S.steepKnown && gm > 0.05;
+  $("gArrow").setAttribute("visibility", showG ? "visible" : "hidden");
+  $("gArrow").setAttribute("transform", `rotate(${-ga})`);
+  $("lvl").setAttribute("visibility", S.levelFound && gm > 0.05 ? "visible" : "hidden");
+  $("lvl").setAttribute("transform", `rotate(${-ga + 90})`);
+  if (document.activeElement !== $("thetaIn")) $("thetaIn").value = Math.round(S.theta);
+  $("stepVal").textContent = S.step.toFixed(2);
+  const active = S.phase === "nav" && !S.busy && !S.won;
+  $("btnStep").disabled = !active;
+  $("btnGrad").hidden = !S.steepKnown || S.won; $("btnGrad").disabled = !active || gm < 0.05;
+  $("btnRestart").hidden = !S.won;
+}
+
+// ---------- rendering ----------
+function frame(ts) {
+  ctx.drawImage(terrainC, 0, 0);
+  const fogA = 1 - S.reveal * 0.85;
+  ctx.globalAlpha = fogA; ctx.drawImage(fogC, 0, 0); ctx.globalAlpha = 1;
+  // tower
+  const [tx, ty] = w2p(TW.x, TW.y);
+  ctx.strokeStyle = "#e8a24a"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(tx - 9, ty + 10); ctx.lineTo(tx, ty - 14); ctx.lineTo(tx + 9, ty + 10); ctx.moveTo(tx - 5, ty + 1); ctx.lineTo(tx + 5, ty + 1); ctx.stroke();
+  // path
+  if (S.path.length > 1) {
+    ctx.strokeStyle = "rgba(232,162,74,0.9)"; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.beginPath();
+    S.path.forEach(([x, y], i) => { const [px, py] = w2p(x, y); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }); ctx.stroke();
+    ctx.fillStyle = "rgba(232,162,74,0.9)";
+    S.path.forEach(([x, y]) => { const [px, py] = w2p(x, y); ctx.beginPath(); ctx.arc(px, py, 2.2, 0, 7); ctx.fill(); });
+  }
+  // darkness
+  const dark = 1 - S.reveal;
+  if (dark > 0) {
+    tctx.globalCompositeOperation = "copy"; tctx.drawImage(seenC, 0, 0);
+    tctx.globalCompositeOperation = "destination-out";
+    const [px, py] = w2p(S.x, S.y), r = VIS * SC;
+    const gr = tctx.createRadialGradient(px, py, r * 0.35, px, py, r);
+    gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+    tctx.fillStyle = gr; tctx.fillRect(px - r, py - r, 2 * r, 2 * r);
+    tctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = dark; ctx.drawImage(tmpC, 0, 0);
+    ctx.globalAlpha = 0.28 * dark; ctx.drawImage(fogC, 0, 0); ctx.globalAlpha = 1;
+  }
+  // beacon
+  if (S.falsePeak || S.won) {
+    const pulse = reduce ? 0.8 : 0.5 + 0.5 * Math.sin(ts / 280);
+    const gr = ctx.createRadialGradient(tx, ty - 14, 0, tx, ty - 14, 40);
+    gr.addColorStop(0, `rgba(255,190,100,${0.75 * pulse + 0.2})`); gr.addColorStop(1, "rgba(255,190,100,0)");
+    ctx.fillStyle = gr; ctx.fillRect(tx - 40, ty - 54, 80, 80);
+    ctx.fillStyle = "#ffd9a0"; ctx.beginPath(); ctx.arc(tx, ty - 14, 3, 0, 7); ctx.fill();
+    ctx.font = "600 12px JetBrains Mono, monospace"; ctx.fillStyle = "#e8a24a"; ctx.textAlign = "center"; ctx.fillText("БАШНЯ", tx, ty + 26);
+  }
+  // player & preview
+  const [px, py] = w2p(S.x, S.y);
+  if (S.phase === "nav" && !S.won && S.calibrated) {
+    const [lx, ly] = grad(S.x, S.y), lm = Math.hypot(lx, ly);
+    if (lm > 0.1 && (S.showLevel || (S.levelFound && Math.abs(angDiff(S.theta, deg(Math.atan2(ly, lx))) - 90) < 6))) {
+      const la = Math.atan2(ly, lx) + Math.PI / 2, L = 1.6 * SC, cx = Math.cos(la) * L, cy = -Math.sin(la) * L;
+      ctx.setLineDash([7, 6]); ctx.strokeStyle = "rgba(143,214,168,0.95)"; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(px - cx, py - cy); ctx.lineTo(px + cx, py + cy); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  if (S.phase === "nav" && !S.won) {
+    const th = rad(S.theta), nx = S.x + S.step * Math.cos(th), ny = S.y + S.step * Math.sin(th), [qx, qy] = w2p(nx, ny);
+    ctx.setLineDash([5, 5]); ctx.strokeStyle = "rgba(221,228,236,0.75)"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(qx, qy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(qx, qy, 5, 0, 7); ctx.stroke();
+  }
+  const pr = ctx.createRadialGradient(px, py, 0, px, py, 16);
+  pr.addColorStop(0, "rgba(255,230,190,0.9)"); pr.addColorStop(1, "rgba(255,230,190,0)");
+  ctx.fillStyle = pr; ctx.fillRect(px - 16, py - 16, 32, 32);
+  ctx.fillStyle = "#fff4e2"; ctx.beginPath(); ctx.arc(px, py, 4, 0, 7); ctx.fill();
+  requestAnimationFrame(frame);
+}
+
+// ---------- compass input ----------
+function setTheta(a) {
+  S.theta = norm360(a); update();
+  clearTimeout(settleTimer); settleTimer = setTimeout(checkDiscover, 550);
+}
+let settleTimer = 0;
+// discoveries fire only when the needle has stopped, so a fast sweep never skips past them
+function checkDiscover() {
+  if (S.phase !== "nav" || S.busy || S.won || !modal.hidden) return;
+  const [hx, hy] = grad(S.x, S.y), gm = Math.hypot(hx, hy), ga = deg(Math.atan2(hy, hx));
+  if (gm < 0.1) return;
+  if (!S.gradFound && angDiff(S.theta, ga) < 6) discoverGradient(hx, hy);
+  else if (!S.levelFound && Math.abs(angDiff(S.theta, ga) - 90) < 5) discoverLevel(hx, hy);
+}
+function discoverLevel(hx, hy) {
+  S.showLevel = true;
+  const th = rad(S.theta), D = hx * Math.cos(th) + hy * Math.sin(th);
+  openModal(`
+    <div class="eyebrow">Пульт · линия уровня</div>
+    <h4>Курс, где высота не меняется</h4>
+    <p>Стрелка сейчас смотрит туда, где D = ${fmt(D)}, то есть почти ноль. Шаг в эту сторону не поднимет и не опустит путника: его высота останется прежней.</p>
+    <p>Такое направление идёт <b>вдоль линии уровня</b> — бирюзовой линии на экране, на которой высота везде одинаковая. Посмотрите на экран: зелёный пунктир через точку путника идёт вдоль ближайшей линии уровня.</p>
+    ${S.steepKnown ? `<p>И посмотрите на компас: этот курс перпендикулярен бирюзовой стрелке градиента. Так бывает всегда, потому что D = |∇h|·cos φ обращается в ноль при φ = 90°.</p>` : ""}
+    <div class="row"><button class="go" id="lOk">Понятно</button></div>`);
+  modal.classList.add("tour");
+  $("mapWrap").scrollIntoView({ block: "start", behavior: "auto" });
+  { const r = cv.getBoundingClientRect(), heroY = r.top + w2p(S.x, S.y)[1] / N * r.height; modal.classList.toggle("at-top", heroY > innerHeight * 0.5); }
+  $("lOk").addEventListener("click", () => {
+    closeModal(); S.showLevel = false; S.levelFound = true; update();
+    say("bar", S.steepKnown ? "Вот и всё устройство склона: самый крутой подъём по градиенту, а поперёк него высота не меняется. Зелёный пунктир на компасе теперь всегда показывает это направление."
+      : "Я отметил это направление на компасе зелёным пунктиром. Высота вдоль него не меняется.");
+  });
+}
+const cmp = $("compass");
+function angleFromEvent(e) { const r = cmp.getBoundingClientRect(); return deg(Math.atan2((r.top + r.height / 2) - e.clientY, e.clientX - (r.left + r.width / 2))); }
+cmp.addEventListener("pointerdown", e => { cmp.setPointerCapture(e.pointerId); setTheta(Math.round(angleFromEvent(e))); });
+cmp.addEventListener("pointermove", e => { if (cmp.hasPointerCapture(e.pointerId)) setTheta(Math.round(angleFromEvent(e))); });
+cmp.addEventListener("keydown", e => {
+  const st = e.shiftKey ? 10 : 1;
+  if (e.key === "ArrowLeft" || e.key === "ArrowUp") { setTheta(S.theta + st); e.preventDefault(); }
+  if (e.key === "ArrowRight" || e.key === "ArrowDown") { setTheta(S.theta - st); e.preventDefault(); }
+  if (e.key === "Enter") { doStep(); e.preventDefault(); }
+});
+$("thetaIn").addEventListener("change", e => { const v = parseFloat(e.target.value); if (!isNaN(v)) setTheta(v); });
+$("stepIn").addEventListener("input", e => { S.step = parseFloat(e.target.value); update(); });
+$("btnStep").addEventListener("click", doStep);
+$("btnGrad").addEventListener("click", () => { const [hx, hy] = grad(S.x, S.y); setTheta(Math.round(deg(Math.atan2(hy, hx)))); });
+$("btnRestart").addEventListener("click", () => restart());
+
+// ---------- gameplay ----------
+function discoverGradient(hx, hy) {
+  S.gradFound = true;
+  const a = +hx.toFixed(2), b = +hy.toFixed(2), ans = Math.hypot(a, b);
+  const th = rad(S.theta), D = hx * Math.cos(th) + hy * Math.sin(th);
+  say("bar", "Стой. Вот здесь. В эту сторону подъём самый крутой: D больше, чем при любом другом повороте стрелки.");
+  let tries = 0;
+  openModal(`
+    <div class="eyebrow">Пульт · новое направление</div>
+    <h4>Вы нашли самый крутой подъём</h4>
+    <p>Вы поворачивали стрелку и нашли курс, где крутизна подъёма D наибольшая (сейчас D = ${fmt(D)}). Это направление называется <b>градиентом</b>.</p>
+    <p>Градиент — это вектор, составленный из частных производных: ∇h = (∂h/∂x, ∂h/∂y). Оказывается, если идти точно по нему, крутизна подъёма равна его длине. Пульт готов рисовать градиент на компасе, но сначала просит оператора посчитать эту длину.</p>
+    <div class="formula">∇h = (${fmt(a)}, ${fmt(b)})<span class="pt">Найдите длину этого вектора |∇h|</span></div>
+    <div class="fields"><label for="qSteep">|∇h|<input id="qSteep" inputmode="decimal" autocomplete="off"></label></div>
+    <div class="fb" id="qFb"></div>
+    <div class="row"><button class="go" id="qOk">Ответить</button></div>`);
+  const check = () => {
+    const v = parseFloat($("qSteep").value.replace(",", ".").replace("−", "-"));
+    const fb = $("qFb");
+    if (!isNaN(v) && Math.abs(v - ans) <= 0.02 + 0.01 * ans) {
+      fb.className = "fb ok"; S.solved++;
+      fb.innerHTML = `Верно, |∇h| = ${fmt(ans)}. Почему так: D = |∇h|·cos φ, где φ — угол между курсом и градиентом. Наибольшее D получается при φ = 0, то есть когда идёте точно по градиенту.`;
+      card.querySelector(".row").innerHTML = '<button class="go" id="qGo">Продолжить</button>';
+      $("qGo").focus();
+      $("qGo").addEventListener("click", () => {
+        closeModal(); S.steepKnown = true; update();
+        say("dev", "Градиент выведен на компас бирюзовой стрелкой, его длина |∇h| видна в модуле наклона. Кнопка «Курс по градиенту» поворачивает на него стрелку.");
+        if (!S.levelFound) say("bar", "Теперь найди другое направление: такое, где D = 0. Путник по нему не поднимается и не спускается. Поворачивай стрелку медленно и остановись, когда D станет нулём.");
+        else say("bar", "Посмотри на компас: зелёный пунктир, который ты нашёл раньше, перпендикулярен градиенту. Так всегда: самый крутой подъём идёт поперёк линии уровня.");
+      });
+      return;
+    }
+    tries++; fb.className = "fb bad";
+    fb.textContent = tries < 2 ? "Не совпадает. Длина вектора считается так же, как длина отрезка на плоскости."
+      : `Длина вектора (a, b) равна √(a² + b²). Здесь √(${fmt(a)}² + ${fmt(b)}²).`;
+  };
+  $("qOk").addEventListener("click", check);
+  $("qSteep").addEventListener("keydown", e => { if (e.key === "Enter") check(); });
+}
+
+function save() { S.checkpoint = { x: S.x, y: S.y, t: S.t, path: S.path.map(p => p.slice()) }; }
+
+async function doStep() {
+  if (S.phase !== "nav" || S.busy || S.won) return;
+  const [hx0, hy0] = grad(S.x, S.y), th = rad(S.theta), h0 = h(S.x, S.y);
+  const D0 = hx0 * Math.cos(th) + hy0 * Math.sin(th);
+  if (!S.linDone && S.steepKnown && D0 > 0.3) { S.linDone = true; await differentialTask(hx0, hy0, th); }
+  let nx = S.x + S.step * Math.cos(th), ny = S.y + S.step * Math.sin(th), edge = false;
+  if (Math.abs(nx) > 5.9 || Math.abs(ny) > 5.9) { nx = Math.max(-5.9, Math.min(5.9, nx)); ny = Math.max(-5.9, Math.min(5.9, ny)); edge = true; }
+  const n = Math.ceil(Math.hypot(nx - S.x, ny - S.y) / 0.35);
+  for (let i = 1; i <= n; i++) stamp(S.x + (nx - S.x) * i / n, S.y + (ny - S.y) * i / n);
+  S.x = nx; S.y = ny; S.t++; S.path.push([nx, ny]);
+  buildFog(fogL());
+  const h1 = h(nx, ny), L = fogL();
+  if (!S.gradFound) S.stepsNoGrad++;
+  update();
+  if (S.t === 1) say("hero", "Принял. Иду.");
+  if (S.linEst !== null && S.linT === S.t) {
+    const act = h1 - h0;
+    say("dev", `Оценка по дифференциалу: Δh ≈ ${fmt(S.linEst)}. Фактически: Δh = ${fmt(act)}.`);
+    say("bar", Math.abs(act - S.linEst) < 0.05 ? "Почти совпало. Дифференциал — это наклон, умноженный на шаг. Чем короче шаг, тем точнее оценка."
+      : "Видишь разницу? На длинном шаге склон успевает измениться, и линейная оценка ошибается. На коротких шагах она точнее.");
+    S.linEst = null;
+  }
+  if (edge) say("hero", "Дальше обрыв, туда не пройти.");
+  if (h1 < L) return die(h1, L);
+
+  // tower reached
+  if (Math.hypot(nx - TW.x, ny - TW.y) < 0.6) return win();
+  // false peak
+  if (!S.falsePeak && Math.hypot(nx - FP.x, ny - FP.y) < 0.5) return falsePeak();
+  // the pass between the hills
+  let scene = false;
+  if (S.falsePeak && !S.saddleDone) {
+    const near = Math.hypot(nx - SD.x, ny - SD.y) < 0.8;
+    if (near || Math.hypot(nx - TW.x, ny - TW.y) < 2.4) { scene = true; await saddleScene(near); }
+  }
+
+  if (D0 > 0.05 && h1 < h0) {
+    S.overshoots++;
+    if (S.overshoots === 1) {
+      say("hero", "Что-то не так. Я шёл вверх, а теперь ниже, чем был.");
+      say("bar", "Он проскочил гребень. Ты дал слишком длинный шаг для такого рельефа.");
+    } else say("bar", "Снова проскочил. Ближе к вершине склон меняется быстрее, и длинный шаг уводит мимо.");
+  }
+  const m = h1 - L;
+  if (m < 0.5 && !S.warned) { S.warned = true; say("hero", "Туман уже по колено!"); say("bar", `До тумана ${fmt(m)} по высоте, а каждый его шаг поднимает туман на ${fmt(RATE)}. Веди его вверх.`); }
+  if (m > 1) S.warned = false;
+  if (!S.gradFound && (S.stepsNoGrad === 4 || S.stepsNoGrad === 9)) {
+    say("bar", S.stepsNoGrad === 4 ? "Не торопись с шагами. Поверни стрелку медленно и следи за числом D. В каком направлении оно наибольшее?"
+      : "Наибольшее D можно найти и без перебора: оно зависит только от ∂h/∂x и ∂h/∂y. Попробуй курс θ, при котором tg θ = (∂h/∂y)/(∂h/∂x).");
+  }
+  if (S.falsePeak && !S.descHint && D0 < 0) { S.descHint = true; say("bar", "Каждый шаг вниз отдаёт высоту туману. Веди его к огню и не задерживайся у подножия."); }
+  if (S.falsePeak && !S.backHint && S.path.length > S.checkpoint.path.length + 2 && Math.hypot(nx - FP.x, ny - FP.y) < 0.6) {
+    S.backHint = true; say("bar", "Он снова на том же холме. Градиент будет возвращать его туда, сколько бы раз мы ему ни поверили.");
+  }
+  if (!scene && S.linT && !S.fdDone && S.t >= S.linT + 2) await fdTask();
+}
+
+// ---------- tasks along the route ----------
+function num(v) { v = String(v).trim().replace(",", ".").replace(/[−–]/g, "-"); return v === "" ? NaN : parseFloat(v); }
+function task({ eyebrow, title, body, fields, hints, explain }) {
+  S.busy = true; update();
+  return new Promise(resolve => {
+    let tries = 0;
+    openModal(`
+      <div class="eyebrow">${eyebrow}</div>
+      <h4>${title}</h4>
+      ${body}
+      <div class="fields">${fields.map(f => `<label for="${f.id}">${f.label}<input id="${f.id}" inputmode="decimal" autocomplete="off"></label>`).join("")}</div>
+      <div class="fb" id="tkFb"></div>
+      <div class="row"><button class="go" id="tkOk">Ответить</button></div>`);
+    const go = () => {
+      const vals = fields.map(f => num($(f.id).value)), fb = $("tkFb");
+      const bad = fields.filter((f, i) => isNaN(vals[i]) || Math.abs(vals[i] - f.ans) > f.tol);
+      if (!bad.length) {
+        S.solved++; fb.className = "fb ok"; fb.innerHTML = explain;
+        card.querySelector(".row").innerHTML = '<button class="go" id="tkGo">Продолжить</button>';
+        $("tkGo").focus();
+        $("tkGo").addEventListener("click", () => { closeModal(); S.busy = false; update(); resolve(vals); });
+        return;
+      }
+      tries++; fb.className = "fb bad";
+      const which = fields.length === 1 ? "Не совпадает." : bad.length === fields.length ? "Не совпадает ни одно значение." : "Не совпадает: " + bad.map(f => f.label.split(" = ")[0]).join(", ") + ".";
+      fb.innerHTML = which + " " + hints[Math.min(tries - 1, hints.length - 1)];
+    };
+    $("tkOk").addEventListener("click", go);
+    card.querySelectorAll("input").forEach(el => el.addEventListener("keydown", e => { if (e.key === "Enter") go(); }));
+  });
+}
+function choose({ eyebrow, title, body, options, explain }) {
+  S.busy = true; update();
+  return new Promise(resolve => {
+    openModal(`
+      <div class="eyebrow">${eyebrow}</div>
+      <h4>${title}</h4>
+      ${body}
+      <div class="fb" id="chFb"></div>
+      <div class="row" id="chRow">${options.map((o, i) => `<button id="ch${i}">${o.label}</button>`).join("")}</div>`);
+    options.forEach((o, i) => $("ch" + i).addEventListener("click", () => {
+      const fb = $("chFb");
+      if (!o.ok) { fb.className = "fb bad"; fb.innerHTML = o.why; return; }
+      S.solved++; fb.className = "fb ok"; fb.innerHTML = explain;
+      $("chRow").innerHTML = '<button class="go" id="chGo">Продолжить</button>';
+      $("chGo").focus();
+      $("chGo").addEventListener("click", () => { closeModal(); S.busy = false; update(); resolve(); });
+    }));
+  });
+}
+
+async function calibrateCourse() {
+  await task({
+    eyebrow: "Пульт · калибровка 3 из 3",
+    title: "Наклон по курсу",
+    body: `<p>Последний замер. Модуль должен научиться считать, насколько круто подниматься не только строго на восток или на север, но и по любому курсу.</p>
+      <div class="formula">∂h/∂x = 6, ∂h/∂y = −2,  θ = 45°<span class="pt">Тестовый рельеф из калибровки 1. Курс 45° — на северо-восток. Найдите крутизну подъёма D по этому курсу.</span></div>`,
+    fields: [{ id: "cD", label: "D", ans: 2 * Math.SQRT2, tol: 0.02 }],
+    hints: ["Шаг по курсу θ смещает на (cos θ, sin θ): немного на восток и немного на север. Наклон складывается из этих двух частей.",
+      "D = ∂h/∂x·cos θ + ∂h/∂y·sin θ, а cos 45° = sin 45° = √2/2 ≈ 0.707."],
+    explain: "Верно: D = 6·√2/2 − 2·√2/2 = 2√2 ≈ 2.83. Это производная по направлению. Теперь модуль считает D сам для любого курса."
+  });
+  startNav();
+}
+
+async function differentialTask(hx, hy, th) {
+  const r2 = v => Math.round(v * 100) / 100;
+  const a = r2(hx), b = r2(hy), dx = r2(S.step * Math.cos(th)), dy = r2(S.step * Math.sin(th)), est = a * dx + b * dy;
+  S.busy = true; update();
+  say("hero", "Подожди. Прежде чем шагать, скажи: насколько я поднимусь? Туман за мой шаг поднимается на 0.08.");
+  await sleep(700);
+  await task({
+    eyebrow: "Пульт · оценка шага",
+    title: "Насколько поднимется путник?",
+    body: `<p>Пульт перевёл следующий шаг в смещения: Δx = s·cos θ, Δy = s·sin θ. Оцените изменение высоты Δh, не делая шага.</p>
+      <div class="formula">∂h/∂x = ${fmt(a)}, ∂h/∂y = ${fmt(b)}<br>Δx = ${fmt(dx)}, Δy = ${fmt(dy)}<span class="pt">Шаг короткий, склон на нём почти не меняется</span></div>`,
+    fields: [{ id: "lD", label: "Δh ≈", ans: est, tol: 0.02 + 0.03 * Math.abs(est) }],
+    hints: ["Для короткого шага изменение функции почти равно её дифференциалу.", "Δh ≈ dh = ∂h/∂x·Δx + ∂h/∂y·Δy."],
+    explain: `Верно: Δh ≈ ${fmt(a)}·${fmt(dx)} + ${fmt(b)}·${fmt(dy)} ≈ ${fmt(est)}. Это дифференциал функции. ${est > RATE ? "Путник поднимется быстрее тумана." : "Это меньше, чем поднимется туман: запас сократится."} Сейчас он шагнёт, и пульт сравнит оценку с настоящей высотой.`
+  });
+  S.linEst = est; S.linT = S.t + 1;
+}
+
+async function fdTask() {
+  S.fdDone = true; S.fdFail = true; S.busy = true; update();
+  const h1 = Math.round(h(S.x, S.y) * 1000) / 1000, h2 = Math.round(h(S.x + 0.1, S.y) * 1000) / 1000, ans = (h2 - h1) / 0.1;
+  say("dev", "Сбой. Канал ∂h/∂x не отвечает: датчик перегрелся.");
+  await sleep(900);
+  say("hero", `Могу проверить ногами. Здесь высота ${fmt(h1, 3)}. Шагнул на 0.1 к востоку — ${fmt(h2, 3)}. Вернулся обратно.`);
+  await sleep(1200);
+  await task({
+    eyebrow: "Пульт · ручной замер",
+    title: "Восстановите ∂h/∂x по двум замерам",
+    body: `<p>Датчик перегрелся, но путник сделал маленький шаг на восток и назвал высоты.</p>
+      <div class="formula">h(x, y) = ${fmt(h1, 3)}<br>h(x + 0.1, y) = ${fmt(h2, 3)}<span class="pt">Оцените ∂h/∂x в точке путника</span></div>`,
+    fields: [{ id: "fdX", label: "∂h/∂x ≈", ans, tol: 0.02 }],
+    hints: ["∂h/∂x — это скорость изменения высоты при движении на восток: на сколько изменилась высота в расчёте на единицу пути.",
+      "∂h/∂x ≈ (h(x + 0.1, y) − h(x, y)) / 0.1."],
+    explain: `Верно: (${fmt(h2, 3)} − ${fmt(h1, 3)}) / 0.1 ≈ ${fmt(ans)}. Это разностное отношение, а частная производная — его предел при шаге, стремящемся к нулю. Датчик остыл и показывает ${fmt(grad(S.x, S.y)[0])}: шаг 0.1 даёт хорошее приближение.`
+  });
+  S.fdFail = false; update();
+  say("dev", "Канал ∂h/∂x восстановлен.");
+}
+
+async function hessTask(o) {
+  await task({
+    eyebrow: "Пульт · геодезический файл",
+    title: o.title,
+    body: `<p>${o.intro}</p>
+      <div class="formula">${o.f}<span class="pt">u = x − x<sub>0</sub>, v = y − y<sub>0</sub>, где (x<sub>0</sub>, y<sub>0</sub>) — ${o.where}</span></div>
+      <p>Найдите вторые производные h в этой точке.</p>`,
+    fields: [{ id: "hA", label: "A = ∂²h/∂x²", ans: o.A, tol: 0.011 }, { id: "hB", label: "B = ∂²h/∂x∂y", ans: o.B, tol: 0.011 }, { id: "hC", label: "C = ∂²h/∂y²", ans: o.C, tol: 0.011 }],
+    hints: ["Продифференцируйте формулу дважды по u, дважды по v и один раз по u и по v.", "Для h = h₀ + a·u² + b·uv + c·v² получается A = 2a, B = b, C = 2c."],
+    explain: `Верно: A = ${fmt(o.A)}, B = ${fmt(o.B)}, C = ${fmt(o.C)}.`
+  });
+  const why = "Не то. Посмотрите на знак AC − B². Если AC − B² > 0, точка — экстремум: максимум при A < 0, минимум при A > 0. Если AC − B² < 0, это седло.";
+  await choose({
+    eyebrow: "Пульт · тип критической точки",
+    title: "Какая это точка?",
+    body: `<div class="formula">A = ${fmt(o.A)}, B = ${fmt(o.B)}, C = ${fmt(o.C)}<span class="pt">∇h = 0. Что здесь: максимум, минимум или седло?</span></div>`,
+    options: [{ label: "Максимум", ok: o.type === "max", why }, { label: "Минимум", ok: o.type === "min", why }, { label: "Седло", ok: o.type === "saddle", why }],
+    explain: o.explain
+  });
+}
+const FP_TASK = {
+  title: "Что это за точка?", where: "точка путника",
+  intro: "В модуле сохранился старый геодезический файл. Около этой точки рельеф описывается так:",
+  f: "h ≈ 3.10 − 0.85u<sup>2</sup> + 0.15uv − 0.9v<sup>2</sup>", A: -1.7, B: 0.15, C: -1.8, type: "max",
+  explain: "Да. AC − B² = (−1.7)(−1.8) − 0.15² ≈ 3.04 > 0 и A < 0, значит, это локальный максимум: в какую сторону ни шагни, склон идёт вниз."
+};
+const SD_TASK = {
+  title: "Перевал между холмами", where: "седловина между двумя холмами",
+  intro: "Файл этого места. Рельеф около самой низкой точки между холмами:",
+  f: "h ≈ 1.99 + 0.1u<sup>2</sup> + uv − 0.1v<sup>2</sup>", A: 0.2, B: 1, C: -0.2, type: "saddle",
+  explain: "Да. AC − B² = 0.2·(−0.2) − 1² = −1.04 < 0, значит, это седловая точка: в одном направлении здесь минимум, в другом — максимум."
+};
+
+async function saddleScene(near) {
+  S.saddleDone = true;
+  await seq(near ? [
+    ["hero", "Я внизу, между двумя холмами. Здесь почти ровно, модуль опять показывает почти ноль."],
+    ["hero", "Это снова ловушка?"],
+    ["bar", "Не обязательно. Градиент равен нулю не только на вершинах. Открой файл этого места."]
+  ] : [
+    ["dev", "В геодезическом файле найден перевал между холмами. Путник прошёл рядом с ним."],
+    ["bar", "Посмотри, через что он прошёл. Это важно."]
+  ]);
+  await hessTask(SD_TASK);
+  await seq([
+    ["bar", "Перевал. Поперёк хребта это самая низкая точка, вдоль хребта — самая высокая. Дорога с одного холма на другой проходит через седло: ниже спускаться не нужно."],
+    ["hero", "Дальше снова вверх. Огонь ближе."]
+  ]);
+}
+
+async function falsePeak() {
+  S.falsePeak = true; S.x = FP.x; S.y = FP.y; S.path[S.path.length - 1] = [FP.x, FP.y]; stamp(FP.x, FP.y); update();
+  await seq([
+    ["sys", "Последние метры путник проходит на ощупь.", 900],
+    ["dev", "∂h/∂x = 0.00, ∂h/∂y = 0.00. Наклон нулевой во всех направлениях. Критическая точка: ∇h = 0."],
+    ["hero", "Кажется, я наверху. В тумане ничего не видно."],
+    ["bar", "∇h = 0 бывает на вершине, в яме и на перевале. Не гадай. Проверь по файлу, что это за точка."]
+  ]);
+  await hessTask(FP_TASK);
+  await seq([
+    ["dev", "Тип точки: локальный максимум."],
+    ["hero", "Значит, вершина. Но башни здесь нет. Здесь вообще ничего нет."],
+    ["sys", "Бариста долго молчит. Потом ставит чашку и наклоняется к пульту.", 1400],
+    ["bar", "Мы тоже когда-то решили, что это вершина.", 2400],
+    ["bar", "Ты всё посчитал верно: это максимум. Но локальный. Он выше всех соседних точек, а не выше всех. Градиент здесь равен нулю и больше ничего не подскажет. Чтобы подняться выше, ему придётся сначала спуститься."],
+    ["sys", "Бариста включает микрофон."],
+    ["bar", "Посмотри на северо-восток. Видишь огонь?"],
+    ["hero", "Вижу. Далеко. А внизу туман."]
+  ]);
+  S.t = Math.min(S.t, 30); buildFog(fogL()); save(); update();
+  say("dev", "Точка сохранения.");
+}
+
+function die(h1, L) {
+  S.busy = true; update();
+  openModal(`
+    <div class="eyebrow">Связь потеряна</div>
+    <h3>Туман накрыл путника</h3>
+    <p>Высота в его точке h = ${fmt(h1)}, а туман поднялся до уровня ${fmt(L)}. Граница тумана сама по себе линия уровня h = ${fmt(L)}: всё, что ниже неё, уже под ядом.</p>
+    <div class="row"><button class="go" id="dRetry">Попробовать снова с точки сохранения</button></div>`);
+  $("dRetry").addEventListener("click", () => {
+    const c = S.checkpoint; S.x = c.x; S.y = c.y; S.t = c.t; S.path = c.path.map(p => p.slice());
+    S.busy = false; S.warned = false; buildFog(fogL()); closeModal(); update();
+    say("dev", "Связь восстановлена. Путник на последней точке сохранения, туман на прежнем уровне.");
+  });
+}
+
+async function win() {
+  S.won = true; S.x = TW.x; S.y = TW.y; S.path[S.path.length - 1] = [TW.x, TW.y]; update();
+  let len = 0; for (let i = 1; i < S.path.length; i++) len += Math.hypot(S.path[i][0] - S.path[i - 1][0], S.path[i][1] - S.path[i - 1][1]);
+  await seq([
+    ["hero", "Башня. Старая антенна ещё держит ток. Включаю."],
+    ["dev", "Сигнал башни принят. Подключаю внешние датчики…", 1500]
+  ]);
+  const t0 = performance.now(), dur = reduce ? 1 : 3200;
+  await new Promise(res => { const step = now => { S.reveal = Math.min(1, (now - t0) / dur); S.reveal < 1 ? requestAnimationFrame(step) : res(); }; requestAnimationFrame(step); });
+  await seq([
+    ["sys", "Туман редеет. На экране впервые видна вся местность."],
+    ["bar", "Он дошёл. Посмотри на его путь: там, где вы шли по градиенту, он пересекает линии уровня под прямым углом."],
+    ["hero", "Не знаю, кто вы. Но без вас я бы остался внизу. Где вы находитесь?"],
+    ["bar", "Кафе на краю зоны. Мы ждём.", 1600]
+  ]);
+  openModal(`
+    <div class="eyebrow">Эпизод пройден · задач решено: ${S.solved} · шагов: ${S.t}</div>
+    <h3>Он дошёл</h3>
+    <p>Посмотрите на карту. Там, где вы вели путника по градиенту, его путь пересекает линии уровня под прямым углом.</p>
+    <ul class="sum">
+      <li><b>Частные производные</b> ∂h/∂x и ∂h/∂y показывают, как меняется высота при шаге строго на восток и строго на север. Без датчика их можно оценить разностным отношением (h(x + Δx, y) − h(x, y)) / Δx.</li>
+      <li><b>Производная по направлению</b> D = ∂h/∂x·cos θ + ∂h/∂y·sin θ — крутизна подъёма по любому курсу.</li>
+      <li><b>Дифференциал</b> dh = ∂h/∂x·Δx + ∂h/∂y·Δy оценивает изменение высоты за шаг. Чем короче шаг, тем точнее.</li>
+      <li><b>Градиент</b> ∇h указывает направление наибольшего роста, а |∇h| — наибольшая крутизна.</li>
+      <li><b>Линии уровня</b> перпендикулярны градиенту: вдоль них D = 0. Граница тумана тоже линия уровня.</li>
+      <li><b>Критическая точка</b> ∇h = 0 бывает максимумом, минимумом или седлом. Их различает знак AC − B², где A, B, C — вторые производные.</li>
+      <li><b>Локальный максимум</b> выше соседних точек, но не обязательно самый высокий. Дорога к другой вершине идёт через седло.</li>
+      <li><b>Длина шага</b> решала исход: короткий шаг съедает время, длинный проскакивает гребень. В машинном обучении это learning rate.</li>
+    </ul>
+    <div class="row"><button class="go" id="wMap">Смотреть карту</button><button id="wAgain">Пройти заново</button></div>`);
+  $("wMap").addEventListener("click", closeModal);
+  $("wAgain").addEventListener("click", () => restart());
+}
+
+// ---------- calibration ----------
+const CAL = [
+  { f: "h(x, y) = x<sup>2</sup>y − 3y + 2x", p: "в точке (1, 2)", a: [6, -2],
+    hint: ["Дифференцируя по x, считайте y константой: (x²y)′ по x равно 2xy.", "Дифференцируя по y, считайте x константой: (x²y)′ по y равно x², (−3y)′ = −3."] },
+  { f: "h(x, y) = e<sup>x − y</sup> + xy<sup>2</sup>", p: "в точке (1, 1)", a: [2, 1],
+    hint: ["По x: (e^(x−y))′ = e^(x−y), (xy²)′ = y².", "По y: (e^(x−y))′ = −e^(x−y), (xy²)′ = 2xy."] }
+];
+function calibrate(i) {
+  const c = CAL[i]; let tries = 0;
+  openModal(`
+    <div class="eyebrow">Пульт · калибровка ${i + 1} из 3</div>
+    <h4>Контрольный замер</h4>
+    <p>Модуль подаёт тестовый рельеф. Посчитайте частные производные в указанной точке и введите числа, чтобы снять заводскую блокировку.</p>
+    <div class="formula">${c.f}<span class="pt">${c.p}</span></div>
+    <div class="fields">
+      <label for="cHx">∂h/∂x<input id="cHx" inputmode="decimal" autocomplete="off"></label>
+      <label for="cHy">∂h/∂y<input id="cHy" inputmode="decimal" autocomplete="off"></label>
+    </div>
+    <div class="fb" id="cFb"></div>
+    <div class="row"><button class="go" id="cOk">Ввести замер</button></div>`);
+  const num = id => parseFloat($(id).value.replace(",", ".").replace("−", "-"));
+  const check = () => {
+    const ox = Math.abs(num("cHx") - c.a[0]) < 0.011, oy = Math.abs(num("cHy") - c.a[1]) < 0.011, fb = $("cFb");
+    if (ox && oy) {
+      fb.className = "fb ok"; fb.textContent = "Замер принят."; S.solved++;
+      setTimeout(() => { if (i + 1 < CAL.length) calibrate(i + 1); else calibrateCourse(); }, reduce ? 100 : 700);
+      return;
+    }
+    tries++; fb.className = "fb bad";
+    const which = !ox && !oy ? "Оба значения не совпадают." : !ox ? "∂h/∂x не совпадает." : "∂h/∂y не совпадает.";
+    fb.textContent = tries >= 2 ? which + " " + (!ox ? c.hint[0] : c.hint[1]) : which;
+  };
+  $("cOk").addEventListener("click", check);
+  card.querySelectorAll("input").forEach(el => el.addEventListener("keydown", e => { if (e.key === "Enter") check(); }));
+}
+
+async function startNav() {
+  S.calibrated = true; S.phase = "nav"; save(); update();
+  await seq([
+    ["dev", "Калибровка принята. ∂h/∂x (восток) и ∂h/∂y (север) в точке путника выведены на пульт."],
+    ["bar", "Хорошо. Теперь поверни стрелку компаса. Пульт покажет D, насколько круто ему подниматься по этому курсу. Крути сколько хочешь: туман поднимается, только когда он делает шаг."]
+  ]);
+}
+
+// ---------- intro ----------
+function title() {
+  openModal(`
+    <div class="eyebrow">Эпизод 1 · Функции многих переменных</div>
+    <h3>Туман</h3>
+    <p>Кафе на краю математической зоны. Ночь. На пульте в задней комнате загорается вызов: где-то на мусорной планете человек застрял в низине, а из неё поднимается ядовитый туман. Он видит лишь на несколько шагов.</p>
+    <p>У вас есть то, чего нет у него: экран с его датчиков и модуль наклона, снятый со списанного робота-строителя утопии. Ведите его к старой сигнальной башне.</p>
+    <div class="topics">частные производные · производная по направлению · градиент · линии уровня · критические точки</div>
+    <div class="row"><button class="go" id="tGo">Начать</button></div>`);
+  $("tGo").addEventListener("click", async () => {
+    closeModal(); S.phase = "intro";
+    if (S.calibrated) return startNav();
+    say("sys", "На пульте мигает вызов. Сквозь помехи пробивается голос.");
+    say("hero", "Кто-нибудь слышит? Я в низине, туман уже у ботинок. Вижу на пару шагов, не дальше.");
+    say("bar", "Слышим. Садись к пульту, я рядом. Его датчики передают нам рельеф вокруг него, но модуль наклона заблокирован.");
+    say("dev", "Модуль наклона. Заводская блокировка. Требуется калибровка оператором: три контрольных замера.");
+    say("bar", "Модуль не знает формулу местности. Зато чувствует, как меняется высота при крошечном шаге на восток и на север. Это частные производные. Посчитай контрольные, и он оживёт.");
+    logEl.scrollTop = 0;
+    tour(0);
+  });
+}
+
+// ---------- orientation tour ----------
+const TOUR = [
+  ["mapWrap", "Это экран с датчиков путника. Светлая точка — он. Датчики видят только то, что рядом с ним, остальное скрыто ночью. Бирюзовые линии — линии уровня. Жёлтая дымка — ядовитый туман: он заполняет всё, что ниже его уровня, и поднимается с каждым шагом путника."],
+  ["pDev", "Модуль наклона. Вверху высота путника, уровень тумана и запас над ним. Если запас станет отрицательным, туман его накроет. Ниже будут частные производные и наклон по курсу, но пока модуль заблокирован."],
+  ["pNav", "Отсюда вы задаёте путнику курс и длину шага. Стрелку компаса можно тянуть мышкой или пальцем. А можно щёлкнуть по компасу и поворачивать её клавишами ← и →. Пунктир на экране показывает, куда он шагнёт. Команду передаёт кнопка или клавиша Enter."],
+  ["comm", "Канал связи. Здесь отвечает путник, сообщает пульт и говорит бариста, который стоит рядом с вами. Если непонятно, что делать дальше, смотрите сюда."],
+  ["pDev", "Модуль снят со списанного робота-строителя и заблокирован. Чтобы он начал показывать наклон, нужно вручную сделать три контрольных замера на тестовом рельефе: две пары частных производных и один наклон по курсу. Возьмите бумагу и ручку."]
+];
+function clearSpot() { document.querySelectorAll(".spot").forEach(el => el.classList.remove("spot")); }
+function tour(i) {
+  clearSpot();
+  const [id, text] = TOUR[i], el = $(id), last = i === TOUR.length - 1;
+  el.classList.add("spot");
+  el.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+  const r = el.getBoundingClientRect();
+  card.innerHTML = `
+    <div class="eyebrow">Ориентирование · ${i + 1} из ${TOUR.length}</div>
+    <p>${text}</p>
+    <div class="row">${last ? '<button class="go" id="tNext">Откалибровать прибор</button>'
+      : '<button class="go" id="tNext">Далее</button><button id="tSkip">Пропустить</button>'}</div>`;
+  modal.classList.add("tour");
+  modal.classList.toggle("at-top", r.top + r.height / 2 > innerHeight * 0.55);
+  modal.hidden = false; $("tNext").focus({ preventScroll: true });
+  const finish = () => { clearSpot(); calibrate(0); };
+  $("tNext").addEventListener("click", () => last ? finish() : tour(i + 1));
+  if (!last) $("tSkip").addEventListener("click", finish);
+}
+function restart() {
+  closeModal(); freshState(true); resetSeen(); stamp(S.x, S.y); buildFog(fogL()); logEl.innerHTML = ""; update(); title();
+}
+
+freshState(false); resetSeen(); stamp(S.x, S.y); buildFog(fogL()); update();
+requestAnimationFrame(frame);
+title();
+})();
+</script>
